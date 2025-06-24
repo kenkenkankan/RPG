@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class BearIdleState : StateMachineBehaviour
 {
@@ -11,6 +10,7 @@ public class BearIdleState : StateMachineBehaviour
     Transform player;
 
     public float detectionAreaRadius = 18f;
+    NavMeshAgent agent;
 
 
     // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
@@ -23,6 +23,20 @@ public class BearIdleState : StateMachineBehaviour
     // OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
     override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+        if (PlayerState.Instance == null || PlayerState.Instance.isDead)
+        {
+            animator.SetBool("isChasing", false);
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isAttacking", false);
+
+            // Stop movement
+            if (agent != null && agent.enabled)
+            {
+                agent.isStopped = true;
+            }
+
+            return;
+        }
         // -- Transition to Walk -- //
 
         timer += Time.deltaTime;
@@ -38,24 +52,5 @@ public class BearIdleState : StateMachineBehaviour
         {
             animator.SetBool("isChasing", true);
         }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     }
-
-
-
-
 }

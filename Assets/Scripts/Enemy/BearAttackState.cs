@@ -8,9 +8,8 @@ public class BearAttackState : StateMachineBehaviour
 {
     NavMeshAgent agent;
     Transform player;
-    
 
-    //public float chaseSpeed = 6f;
+    public float chaseSpeed = 6f;
 
     //public float stopChasingDistance = 22f;
     public float stopAttackingDistance = 2.5f;
@@ -18,8 +17,6 @@ public class BearAttackState : StateMachineBehaviour
     public float attackRate = 1f; // attack each sec
     private float attackTimer;
     public int damageToInflict = 5; // hitpoint per sec
-
-
 
     // OnStateEnter is called when a transition starts and the state machine starts to evaluate this state
     override public void OnStateEnter(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
@@ -33,8 +30,16 @@ public class BearAttackState : StateMachineBehaviour
     {
         if (PlayerState.Instance == null || PlayerState.Instance.isDead)
         {
-            // Matikan flag "isAttacking" supaya balik ke Idle/Chase
+            animator.SetBool("isChasing", false);
+            animator.SetBool("isWalking", false);
             animator.SetBool("isAttacking", false);
+
+            // Stop movement
+            if (agent != null && agent.enabled)
+            {
+                agent.isStopped = true;
+            }
+
             return;
         }
 
@@ -69,7 +74,6 @@ public class BearAttackState : StateMachineBehaviour
         agent.transform.rotation = Quaternion.Euler(0, yRotation, 0);
     }
 
-
     // OnStateExit is called when a transition ends and the state machine finishes evaluating this state
     override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
@@ -87,9 +91,7 @@ public class BearAttackState : StateMachineBehaviour
             return;
         }
 
+        Debug.Log("Bear attacks player!");
         PlayerState.Instance.TakeDamage(damageToInflict);
     }
-
-
-
 }

@@ -25,6 +25,21 @@ public class BearChaseState : StateMachineBehaviour
     // OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
     override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
+        if (PlayerState.Instance == null || PlayerState.Instance.isDead)
+        {
+            animator.SetBool("isChasing", false);
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isAttacking", false);
+
+            // Stop movement
+            if (agent != null && agent.enabled)
+            {
+                agent.isStopped = true;
+            }
+
+            return;
+        }
+
         agent.SetDestination(player.position);
         animator.transform.LookAt(player);
 
@@ -42,6 +57,7 @@ public class BearChaseState : StateMachineBehaviour
             animator.SetBool("isAttacking", true);
         }
     }
+
 
     // OnStateExit is called when a transition ends and the state machine finishes evaluating this state
     override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)

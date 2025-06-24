@@ -43,13 +43,27 @@ public class BearWalkState : StateMachineBehaviour
     // OnStateUpdate is called on each Update frame between OnStateEnter and OnStateExit callbacks
     override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        // -- If agent arrived at waypoint, move to next waypoint -- //
+        if (PlayerState.Instance == null || PlayerState.Instance.isDead)
+        {
+            animator.SetBool("isChasing", false);
+            animator.SetBool("isWalking", false);
+            animator.SetBool("isAttacking", false);
+
+            // Stop movement
+            if (agent != null && agent.enabled)
+            {
+                agent.isStopped = true;
+            }
+
+            return;
+        }
+
+        // -- Normal Walking Logic -- //
         if (agent.remainingDistance <= agent.stoppingDistance)
         {
             agent.SetDestination(waypointsList[Random.Range(0, waypointsList.Count)].position);
         }
 
-        // -- Transition to Idle -- //
         timer += Time.deltaTime;
         if (timer > walkingTime)
         {
@@ -62,12 +76,4 @@ public class BearWalkState : StateMachineBehaviour
             animator.SetBool("isChasing", true);
         }
     }
-
-    // OnStateExit is called when a transition ends and the state machine finishes evaluating this state
-    override public void OnStateExit(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
-    {
-        agent.SetDestination(agent.transform.position);
-    }
-
-
 }

@@ -7,6 +7,8 @@ public class CharMovement : MonoBehaviour
 {
     public static PlayerState Instance { get; set; }
 
+    private PlayerState playerState;
+
     [Header("References")]
     private CharacterController controller;
     [SerializeField] private Transform camera;
@@ -40,32 +42,40 @@ public class CharMovement : MonoBehaviour
     private int animGrounded;
     private int animAttack;
     private int animDie;
+    private int animHorizontal;
+    private int animVertical;
 
+    private float animH;
+    private float animV;
 
     [Header("Input")]
     private float moveInput;
     private float turnInput;
 
-
     private void Start()
     {
         controller = GetComponent<CharacterController>();
         anim = GetComponent<Animator>();
-
         SetupAnimator();
-
-        currentHealth = maxHealth;
+        
     }
+
 
     private void Update()
     {
+        
+
         InputManagement();
         Movement();
-
     }
 
     private void Movement()
     {
+        if (PlayerState.Instance != null && PlayerState.Instance.isDead)
+        {
+            return;
+        }
+
         GroundMovement();
         Turn();
   
@@ -114,35 +124,60 @@ public class CharMovement : MonoBehaviour
 
     private void GroundMovement()
     {
-        Vector3 move = new Vector3(turnInput, 0, moveInput);
-        move = transform.TransformDirection(move);
+        float rawH = Input.GetAxis("Horizontal");
+        float rawV = Input.GetAxis("Vertical");
 
-        if (Input.GetKey(KeyCode.LeftShift))
-        {
-            speed = Mathf.Lerp(speed, sprintSpeed, sprintTransitSpeed * Time.deltaTime);
-        }
-        else
-        {
-            speed = Mathf.Lerp(speed, walkSpeed, sprintTransitSpeed * Time.deltaTime);
-        }
+        Vector3 input = new Vector3(rawH, 0, rawV).normalized;
 
-        move.y = VerticalForceCalculation();
+        // Arah relatif terhadap kamera
+        Vector3 camForward = camera.forward;
+        camForward.y = 0;
+        camForward.Normalize();
 
-        move *= speed;
+        Vector3 camRight = camera.right;
+        camRight.y = 0;
+        camRight.Normalize();
 
-        controller.Move(move * Time.deltaTime);
+        Vector3 moveDir = camForward * input.z + camRight * input.x;
 
-        //Animations
-        animator.SetFloat("MoveInput", speed * MathF.Max(MathF.Abs(moveInput), MathF.Abs(turnInput)));
+        bool isSprinting = Input.GetKey(KeyCode.LeftShift);
+        float movementMultiplier = isSprinting ? 1.5f : 1f;
+
+        Vector3 localMove = transform.InverseTransformDirection(moveDir) * movementMultiplier;
+
+        speed = Mathf.Lerp(speed, isSprinting ? sprintSpeed : walkSpeed, sprintTransitSpeed * Time.deltaTime);
+
+        animH = Mathf.Lerp(animH, localMove.x, Time.deltaTime * 10f);
+        animV = Mathf.Lerp(animV, localMove.z, Time.deltaTime * 10f);
+
+        moveDir.y = VerticalForceCalculation();
+        controller.Move(moveDir * speed * Time.deltaTime);
+
+        animator.SetFloat("Horizontal", animH);
+        animator.SetFloat("Vertical", animV);
     }
+
+
 
     private void SetupAnimator()
     {
-        animMoveInput = Animator.StringToHash("MoveInput");
         animJump = Animator.StringToHash("Jump");
         animGrounded = Animator.StringToHash("Grounded");
         animAttack = Animator.StringToHash("Attack");
         animDie = Animator.StringToHash("Die");
+
+        // Tambahan
+        animHorizontal = Animator.StringToHash("Horizontal");
+        animVertical = Animator.StringToHash("Vertical");
+    }
+
+    void UpdateAnimator(Vector3 localMove)
+    {
+        animH = Mathf.Lerp(animH, localMove.x, Time.deltaTime * 10f);
+        animV = Mathf.Lerp(animV, localMove.z, Time.deltaTime * 10f);
+
+        animator.SetFloat("Horizontal", animH);
+        animator.SetFloat("Vertical", animV);
     }
 
     private void Attack()
@@ -152,6 +187,7 @@ public class CharMovement : MonoBehaviour
             animator.SetTrigger(animAttack);
         }
         AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+
         if (stateInfo.IsName("Attack"))
         {
             currentSpeed = slowSpeed;
@@ -164,6 +200,7 @@ public class CharMovement : MonoBehaviour
 
     private void InputManagement()
     {
+
         moveInput = Input.GetAxis("Vertical");
         turnInput = Input.GetAxis("Horizontal");
     }
@@ -179,32 +216,13 @@ public class CharMovement : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
+   
+
         currentHealth -= damage;
 
         if (currentHealth <= 0.0f)
         {
             animator.SetTrigger("Die");
-        }
-    }
-
-
-    private IEnumerator StartJump()
-    {
-        yield return new WaitForSeconds(.5f);
-
-        verticalVelocity = Mathf.Sqrt(jumpHeight * gravity * 2);
-    }
-
-    private bool GroundCheck()
-    {
-        if (Physics.Raycast(new Vector3(controller.center.x, controller.center.y - controller.height, controller.center.z), 
-            -controller.transform.up, out RaycastHit hit, 2f))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
         }
     }
 }

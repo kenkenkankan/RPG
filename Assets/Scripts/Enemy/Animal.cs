@@ -1,6 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Animal : MonoBehaviour
 {
@@ -11,21 +10,34 @@ public class Animal : MonoBehaviour
     [SerializeField] int maxHealth;
     [SerializeField] private Animator animator;
 
+    [SerializeField] private Slider healthSlider; // Tambahkan referensi ke slider
+
     private int animDie;
 
     private void Start()
     {
         currentHealth = maxHealth;
         animator = GetComponent<Animator>();
+
+        if (healthSlider != null)
+        {
+            healthSlider.maxValue = maxHealth;
+            healthSlider.value = currentHealth;
+        }
     }
 
     public void TakeDamage(int damage)
     {
         currentHealth -= damage;
 
-        if (currentHealth <= 0.0f)
+        if (healthSlider != null)
         {
-            animator.SetTrigger("Die");   
+            healthSlider.value = currentHealth;
+        }
+
+        if (currentHealth <= 0)
+        {
+            animator.SetTrigger("Die");
         }
     }
 
@@ -33,18 +45,7 @@ public class Animal : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Q))
         {
-            currentHealth -= 10;
+            TakeDamage(10);
         }
-    }
-
-    private void SetupAnimator()
-    {
-        animDie = Animator.StringToHash("Die");
-    }
-
-    private void Die()
-    {
-        Debug.Log($"{animalName} has died.");
-        Destroy(gameObject);
     }
 }
